@@ -89,8 +89,8 @@ if (!requester) {
   fail("requester identity missing");
 }
 
-if (requester === "gerentecontamestre-art") {
-  fail("authority account cannot request its own approval");
+if (requester !== "willblackmoney") {
+  fail("requester is not authorized for this authority");
 }
 
 const requestB64 = extractRequestB64(event.issue.body);
