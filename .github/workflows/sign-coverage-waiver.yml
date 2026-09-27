@@ -1,0 +1,58 @@
+name: Sign VQA Coverage Waiver
+
+on:
+  issues:
+    types:
+      - opened
+
+permissions:
+  contents: read
+  issues: read
+
+concurrency:
+  group: coverage-waiver-issue-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  sign:
+    name: Human-approved coverage waiver signing
+
+    if: >-
+      github.event.issue.title == '[VQA] Coverage Waiver Request'
+      && github.actor != 'gerentecontamestre-art'
+
+    runs-on: ubuntu-latest
+
+    environment:
+      name: coverage-approval-production
+
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout authority repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Verify runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --version
+          test -f scripts/sign-coverage-waiver.mjs
+
+      - name: Sign approved request
+        env:
+          VQA_COVERAGE_WAIVER_ED25519_PRIVATE_KEY_PEM: ${{ secrets.VQA_COVERAGE_WAIVER_ED25519_PRIVATE_KEY_PEM }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/sign-coverage-waiver.mjs
+
+      - name: Upload detached signature
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-waiver-issue-${{ github.event.issue.number }}-run-${{ github.run_id }}
+          path: out/coverage-waiver-detached-signature.json
+          if-no-files-found: error
+          retention-days: 30
