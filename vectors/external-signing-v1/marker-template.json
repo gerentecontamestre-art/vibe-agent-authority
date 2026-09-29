@@ -1,0 +1,6 @@
+{
+  "_nota": "TEMPLATE ESTRUTURAL. Nao contem assinatura real. Assinatura = base64 de 64 bytes Ed25519 sobre os bytes de waiver-binding.canonical.txt.",
+  "alg": "Ed25519",
+  "signature": "<BASE64_DE_64_BYTES_ASSINATURA_DESTACADA>",
+  "key_fingerprint": "<SHA256_HEX_DA_DER_SPKI_44_BYTES>"
+}

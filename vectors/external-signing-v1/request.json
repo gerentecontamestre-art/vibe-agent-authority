@@ -1,0 +1,20 @@
+{
+  "request_kind": "coverage-waiver-request",
+  "request_only": true,
+  "approval_purpose": "NO_APPLICABLE_JOURNEY",
+  "repo_identity": "local:vector-fixture-external-signing-v1",
+  "git_base": "base-vector-0000",
+  "git_head": "head-vector-0001",
+  "diff_fingerprint": "sha256:diff-vector-0001",
+  "index_fingerprint": "sha256:index-vector-0001",
+  "journey_hashes": {
+    "j-vector": "sha256:journey-vector-0001"
+  },
+  "scope_hash": "sha256:scope-vector-0001",
+  "gate": "TARGETED",
+  "waived": [],
+  "reason": "Vetor sintetico deterministico p/ contrato de assinatura externa V1",
+  "task_change_reference": "VQA-12-16A-VECTOR",
+  "requested_validity_days": 7,
+  "signature": null
+}

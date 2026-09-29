@@ -1,58 +1,62 @@
+# Sign VQA Coverage Waiver — SIGNER V2 (patch bundle, aplicacao humana pendente).
+# Assina utf8(stableStringify(waiverBinding)) — 20 campos. NUNCA request bytes.
+# Protecoes: trigger issues/opened; requester fixo; environment com human review
+# obrigatorio (reviewer != requester); secret so apos approval; sem self-review
+# por config (reviewers: gerentecontamestre-art); permissoes minimas; sem rede.
 name: Sign VQA Coverage Waiver
 
 on:
   issues:
-    types:
-      - opened
+    types: [opened]
 
 permissions:
   contents: read
-  issues: read
 
 concurrency:
-  group: coverage-waiver-issue-${{ github.event.issue.number }}
+  group: sign-waiver-issue-${{ github.event.issue.number }}
   cancel-in-progress: false
 
 jobs:
   sign:
-    name: Human-approved coverage waiver signing
-
-    if: >-
-      github.event.issue.title == '[VQA] Coverage Waiver Request'
-      && github.actor == 'willblackmoney'
-
+    # Gate fail-closed ANTES de qualquer approval do environment: exige
+    # titulo exato + requester exato. Revalidado dentro do script.
+    if: github.event.issue.title == '[VQA] Coverage Waiver Request' && github.event.issue.user.login == 'willblackmoney'
     runs-on: ubuntu-latest
-
-    environment:
-      name: coverage-approval-production
-
     timeout-minutes: 10
-
+    environment: coverage-approval-production
     steps:
-      - name: Checkout authority repository
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Checkout (pin imutavel, sem credenciais persistidas)
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
 
-      - name: Verify runtime
-        shell: bash
-        run: |
-          set -euo pipefail
-          node --version
-          test -f scripts/sign-coverage-waiver.mjs
+      - name: Guard Node >= 20 (fail-closed)
+        run: node -e "process.exit(Number(process.versions.node.split('.')[0])>=20?0:1)"
 
-      - name: Sign approved request
+      - name: Extrair corpo da Issue
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          printf '%s' "$ISSUE_BODY" > /tmp/vqa-issue-body.txt
+          test -s /tmp/vqa-issue-body.txt
+
+      - name: Assinar binding canonico (secret SOMENTE neste step, apos approval)
         env:
           VQA_COVERAGE_WAIVER_ED25519_PRIVATE_KEY_PEM: ${{ secrets.VQA_COVERAGE_WAIVER_ED25519_PRIVATE_KEY_PEM }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          node scripts/sign-coverage-waiver.mjs
+        run: >
+          node scripts/sign-coverage-waiver.mjs --sign
+          --issue-body-file /tmp/vqa-issue-body.txt
+          --issue-number "${{ github.event.issue.number }}"
+          --requester "${{ github.event.issue.user.login }}"
+          --reviewer "gerentecontamestre-art"
+          --run-id "${{ github.run_id }}"
+          --workflow-sha "${{ github.sha }}"
+          --out coverage-waiver-detached-signature.json
 
-      - name: Upload detached signature
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - name: Publicar artefato (sem secret)
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: coverage-waiver-issue-${{ github.event.issue.number }}-run-${{ github.run_id }}
-          path: out/coverage-waiver-detached-signature.json
+          path: coverage-waiver-detached-signature.json
           if-no-files-found: error
-          retention-days: 30
+          retention-days: 90
